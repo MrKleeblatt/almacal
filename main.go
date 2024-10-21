@@ -90,7 +90,7 @@ func getAuthCookieAndRVToken() string {
 		"scope":         {"openid DSF email"},
 		"response_mode": {"query"},
 		"response_type": {"code"},
-		"redirect_uri":  {"https://almaweb.uni-leipzig.de/scripts/mgrqispi.dll?APPNAME=CampusNet&PRGNAME=LOGINCHECK&ARGUMENTS=-N000000000000001,ids_mode&ids_mode=Y"},
+		"redirect_uri":  {buildRedirectUrl()},
 	}
 	uri.RawQuery = query.Encode()
 	res, err := redirectClient.Get(uri.String())
