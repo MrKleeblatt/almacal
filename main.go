@@ -17,18 +17,6 @@ import (
 
 var jar = keksbox.New()
 
-func printJar() {
-	kekse := jar.(keksbox.Keksbox)
-	for _, c := range *kekse.Entries {
-		fmt.Println(c)
-		fmt.Println()
-	}
-}
-func halt() {
-	var b []byte = make([]byte, 1)
-	os.Stdin.Read(b)
-}
-
 var redirectClient = &http.Client{
 	Jar: jar,
 	CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -73,9 +61,6 @@ func login(username, password string) (string, string) {
 	rvtoken := getAuthCookieAndRVToken()
 	location := postLoginForm(username, password, rvtoken)
 	redirectLocation := loginCheck(location)
-	println("redirectLocation", redirectLocation)
-	printJar()
-	halt()
 	return loginCheckRedirect(redirectLocation)
 }
 
@@ -211,7 +196,6 @@ func loginCheck(location string) string {
 	}
 
 	req, err := http.NewRequest("GET", uri.String(), nil)
-	logRequest(req, noRedirectClient)
 
 	res, err := noRedirectClient.Do(req)
 	if err != nil {
@@ -225,7 +209,6 @@ func loginCheckRedirect(redirectLocation string) (string, string) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	logRequest(req, redirectClient)
 	res, err := redirectClient.Do(req)
 	if err != nil {
 		log.Fatalln(err)
@@ -241,13 +224,4 @@ func loginCheckRedirect(redirectLocation string) (string, string) {
 	return "", ""
 }
 
-func logRequest(req *http.Request, client *http.Client) {
-	ctx := context.Background()
-	r := req.Clone(ctx)
-	for _, c := range client.Jar.Cookies(req.URL) {
-		r.AddCookie(c)
-	}
-	r.URL.Host = "localhost:8080"
-	r.URL.Scheme = "http"
-	client.Do(r)
 }
