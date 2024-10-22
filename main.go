@@ -128,7 +128,6 @@ func postLoginForm(username, password, rvtoken string) string {
 	}
 
 	payload := &bytes.Buffer{}
-	println(buildRedirectUrlForBody())
 	writer := multipart.NewWriter(payload)
 
 	_ = writer.WriteField("ReturnUrl", buildRedirectUrlForBody())
