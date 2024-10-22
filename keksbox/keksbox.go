@@ -88,7 +88,6 @@ func (k Keksbox) SetCookies(u *url.URL, cookies []*http.Cookie) {
 	for _, c := range cookies {
 		if c.Domain == "" {
 			c.Domain = domain
-			fmt.Println("Set domain of", c.Name, "to", domain)
 		}
 		// find cookie if it exists already and replace it, otherwise add it
 		// cookies are the same if they share their domain, path and name
