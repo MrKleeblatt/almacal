@@ -2,9 +2,11 @@ package main
 
 import (
 	"almacal/keksbox"
+	"bytes"
 	"context"
 	"fmt"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
@@ -14,17 +16,19 @@ import (
 )
 
 var jar = keksbox.New()
-func printJar(){
+
+func printJar() {
 	kekse := jar.(keksbox.Keksbox)
-	for _,c := range *kekse.Entries {
+	for _, c := range *kekse.Entries {
 		fmt.Println(c)
 		fmt.Println()
 	}
 }
-func halt(){
+func halt() {
 	var b []byte = make([]byte, 1)
 	os.Stdin.Read(b)
 }
+
 var redirectClient = &http.Client{
 	Jar: jar,
 	CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -64,11 +68,12 @@ func downloadIcalFile(sessionno, menuid string) string {
 	return ""
 }
 
-func login(username, password string) (string,string) {
+func login(username, password string) (string, string) {
 	getKwdCookie()
 	rvtoken := getAuthCookieAndRVToken()
-	postLoginForm(username, password, rvtoken)
-	redirectLocation := loginCheck()
+	location := postLoginForm(username, password, rvtoken)
+	redirectLocation := loginCheck(location)
+	println("redirectLocation", redirectLocation)
 	printJar()
 	halt()
 	return loginCheckRedirect(redirectLocation)
@@ -116,31 +121,41 @@ func getAuthCookieAndRVToken() string {
 	return token
 }
 
-func postLoginForm(username, password, rvtoken string) {
+func postLoginForm(username, password, rvtoken string) string {
 	uri, err := url.Parse("https://dsf.almaweb.uni-leipzig.de/IdentityServer/Account/Login")
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	form := url.Values{
-		"ReturnUrl":                  {buildReturnUrl()},
-		"CancelUrl":                  {""},
-		"Username":                   {username},
-		"Password":                   {password},
-		"button":                     {"login"},
-		"__RequestVerificationToken": {rvtoken},
-		"RememberLogin":              {"false"},
+	payload := &bytes.Buffer{}
+	println(buildRedirectUrlForBody())
+	writer := multipart.NewWriter(payload)
+
+	_ = writer.WriteField("ReturnUrl", buildRedirectUrlForBody())
+	_ = writer.WriteField("CancelUrl", "")
+	_ = writer.WriteField("Username", username)
+	_ = writer.WriteField("Password", password)
+	_ = writer.WriteField("button", "login")
+	_ = writer.WriteField("__RequestVerificationToken", rvtoken)
+	_ = writer.WriteField("RememberLogin", "false")
+	err = writer.Close()
+	if err != nil {
+		fmt.Println(err)
+		return ""
 	}
-	var payload = strings.NewReader(form.Encode())
+
 	req, err := http.NewRequest("POST", uri.String(), payload)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	if err != nil {
 		log.Fatalln(err)
 	}
-	_, err = noRedirectClient.Do(req)
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	res, err := noRedirectClient.Do(req)
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	return res.Header.Get("Location")
 }
 
 func buildReturnUrl() string {
@@ -174,8 +189,8 @@ func buildRedirectUrl() string {
 	return result.String()
 }
 
-func loginCheck() string {
-	uri, err := url.Parse("https://dsf.almaweb.uni-leipzig.de/IdentityServer/connect/authorize/callback")
+func buildRedirectUrlForBody() string {
+	result, err := url.Parse("https://dsf.almaweb.uni-leipzig.de/IdentityServer/connect/authorize/callback")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -184,9 +199,17 @@ func loginCheck() string {
 		"scope":         {"openid DSF email"},
 		"response_mode": {"query"},
 		"response_type": {"code"},
-		"redirect_uri":  {buildRedirectUrl()},
+		"redirect_uri":  {"https://almaweb.uni-leipzig.de/scripts/mgrqispi.dll?APPNAME=CampusNet&PRGNAME=LOGINCHECK&ARGUMENTS=-N000000000000001,ids_mode&ids_mode=Y"},
 	}
-	uri.RawQuery = query.Encode()
+	result.RawQuery = query.Encode()
+	return strings.Split(result.String(), "dsf.almaweb.uni-leipzig.de")[1]
+}
+
+func loginCheck(location string) string {
+	uri, err := url.Parse("https://dsf.almaweb.uni-leipzig.de" + location)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	req, err := http.NewRequest("GET", uri.String(), nil)
 	logRequest(req, noRedirectClient)
@@ -198,7 +221,7 @@ func loginCheck() string {
 	return res.Header.Get("Location")
 }
 
-func loginCheckRedirect(redirectLocation string) (string,string){
+func loginCheckRedirect(redirectLocation string) (string, string) {
 	req, err := http.NewRequest("GET", redirectLocation, nil)
 	if err != nil {
 		log.Fatalln(err)
@@ -208,13 +231,13 @@ func loginCheckRedirect(redirectLocation string) (string,string){
 	if err != nil {
 		log.Fatalln(err)
 	}
-	// defer res.Body.Close()
-	// by, err := io.ReadAll(res.Body)
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
-	// str := string(by)
-	// fmt.Println(str)
+	/*defer res.Body.Close()
+	by, err := io.ReadAll(res.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	str := string(by)
+	fmt.Println(str)*/
 	fmt.Println("REFRESH:", res.Header.Get("REFRESH"))
 	return "", ""
 }
