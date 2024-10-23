@@ -41,5 +41,5 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", handler)
-	http.ListenAndServe("[::1]:8000", nil)
+	http.ListenAndServe("localhost:8010", nil)
 }
