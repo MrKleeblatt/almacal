@@ -14,16 +14,16 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-func DownloadIcalFile(sessionno, menuid string) string {
+func IcalFile(sessionno, menuid, date string) string {
 	reqBody := url.Values{
-		"month":     {"0"},
-		"week":      {"Y2024W42"},
+		"month":     {date},
+		"week":      {"0"},
 		"APPNAME":   {"CampusNet"},
 		"PRGNAME":   {"SCHEDULER_EXPORT_START"},
 		"ARGUMENTS": {"sessionno,menuid,date"},
 		"sessionno": {sessionno},
 		"menuid":    {menuid},
-		"date":      {"Y2024W42"},
+		"date":      {date},
 	}
 	payload := strings.NewReader(reqBody.Encode())
 	req, err := http.NewRequest("POST", "https://almaweb.uni-leipzig.de/scripts/mgrqispi.dll", payload)
@@ -57,5 +57,13 @@ func DownloadIcalFile(sessionno, menuid string) string {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	return string(by)
+	var result strings.Builder
+	for _, c := range by {
+		// for some reason this character encoding uses a null character after every character
+		if c == 0 {
+			continue
+		}
+		result.WriteByte(c)
+	}
+	return result.String()
 }
