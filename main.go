@@ -49,17 +49,23 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	var result strings.Builder
 	for range 12 {
 		ical, err := calendar.IcalFile(authuser, date.Format("Y2006M01"))
+		if err == calendar.ErrNoSuchFile {
+			goto nextMonth
+		}
 		if err != nil {
 			logger.Warn(err)
+			goto nextMonth
 		}
 		_, err = result.WriteString(ical)
 		if err != nil {
 			logger.Error("could not write calendar data to string builder", err)
 		}
-		date.AddDate(0, 1, 0)
+	nextMonth:
+		date = date.AddDate(0, 1, 0)
 	}
-	str := strings.ReplaceAll(result.String(), "END:VCALENDAR\nBEGIN:VCALENDAR", "")
-	regex := regexp.MustCompile("\n\nBEGIN:VTIMEZONE[\\S\\s]*END:VTIMEZONE\n")
+	// str := strings.ReplaceAll(result.String(), "END:VCALENDAR\nBEGIN:VCALENDAR", "")
+	str := result.String()
+	regex := regexp.MustCompile("\nEND:VCALENDAR\r\nBEGIN:VCALENDAR\r\nVERSION:2\\.0\r\nPRODID:-\\/\\/Datenlotsen Informationssysteme GmbH\\/\\/CampusNet\\/\\/DE\r\nMETHOD:PUBLISH\r\n\r\nBEGIN:VTIMEZONE\r\nTZID:CampusNetZeit\r\nBEGIN:STANDARD\r\nDTSTART:[\\dT]+\r\nRRULE:FREQ=YEARLY;BYDAY=.+;BYMONTH=\\d+\r\nTZOFFSETFROM:[\\+\\d]+\r\nTZOFFSETTO:[\\+\\d]+\r\nEND:STANDARD\r\nBEGIN:DAYLIGHT\r\nDTSTART:[T\\d]+\r\nRRULE:FREQ=YEARLY;BYDAY=.+;BYMONTH=\\d+\r\nTZOFFSETFROM:[\\+\\d]+\r\nTZOFFSETTO:[\\+\\d]+\r\nEND:DAYLIGHT\r\nEND:VTIMEZONE")
 	str = regex.ReplaceAllString(str, "")
 	fmt.Fprint(w, str)
 }

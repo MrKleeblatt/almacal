@@ -17,6 +17,7 @@ import (
 
 var (
 	ErrIcalFetch = errors.New("ical file fetch error")
+	ErrNoSuchFile = errors.New("no ical file available for that date")
 	ErrScraping  = errors.New("web scraping error")
 )
 
@@ -54,6 +55,9 @@ func IcalFile(au *auth.AuthUser, date string) (string, error) {
 		href, _ = selection.Attr("href")
 		href = "https://almaweb.uni-leipzig.de" + href
 	})
+	if href == "" {
+		return "", ErrNoSuchFile
+	}
 	req, err = http.NewRequest("GET", href, nil)
 	if err != nil {
 		logger.Fatal("error during get request creation")
