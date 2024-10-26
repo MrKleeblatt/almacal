@@ -8,6 +8,13 @@ require (
 )
 
 require (
+	github.com/withmandala/go-log v0.1.0 // indirect
+	golang.org/x/crypto v0.28.0 // indirect
+	golang.org/x/sys v0.26.0 // indirect
+	golang.org/x/term v0.25.0 // indirect
+)
+
+require (
 	github.com/andybalholm/cascadia v1.3.2 // indirect
 	golang.org/x/text v0.19.0
 )
