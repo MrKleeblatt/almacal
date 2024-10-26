@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -57,7 +58,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 		date.AddDate(0, 1, 0)
 	}
-	fmt.Fprint(w, strings.ReplaceAll(result.String(), "END:VCALENDAR\nBEGIN:VCALENDAR", ""))
+	str := strings.ReplaceAll(result.String(), "END:VCALENDAR\nBEGIN:VCALENDAR", "")
+	regex := regexp.MustCompile("\n\nBEGIN:VTIMEZONE[\\S\\s]*END:VTIMEZONE\n")
+	str = regex.ReplaceAllString(str, "")
+	fmt.Fprint(w, str)
 }
 
 func main() {
