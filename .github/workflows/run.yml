@@ -25,6 +25,10 @@ jobs:
         run: tmux kill-session -t almacal-kleetec-de
         continue-on-error: true
 
+      - name: get go dependencies
+        run: go mod tidy
+        continue-on-error: false
+
       - name: build almacal
         run: go build
         continue-on-error: false
