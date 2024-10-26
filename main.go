@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+// TODO: testing
+
 func handler(w http.ResponseWriter, r *http.Request) {
 	credentialsArgument := r.URL.Query().Get("credentials")
 	bytes, err := base64.StdEncoding.DecodeString(credentialsArgument)
