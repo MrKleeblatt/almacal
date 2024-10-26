@@ -1,8 +1,8 @@
 // This package is NOT fully compliant with RFC 6265 as it sticks more to Go's
 // own data structures and representations of cookies
+// There is no thread safety because this module never gets used among multiple threads.
 
 // TODO: integrate PublicSuffixList
-// TODO: thread safety through mutex's
 // TODO: HttpOnly attribute
 
 package keksbox
