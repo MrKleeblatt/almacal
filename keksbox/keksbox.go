@@ -8,7 +8,7 @@
 package keksbox
 
 import (
-	"fmt"
+	"almacal/logger"
 	"net/http"
 	"net/url"
 )
@@ -68,7 +68,7 @@ func (k Keksbox) Cookies(u *url.URL) (result []*http.Cookie) {
 			continue
 		} else {
 			// they have the same precedence, so just add the cookie
-			fmt.Println("adding cookie with same name twice")
+			logger.Debug("adding cookie with same name twice")
 			result = append(result, c)
 		}
 	}
@@ -94,7 +94,7 @@ func (k Keksbox) SetCookies(u *url.URL, cookies []*http.Cookie) {
 		found := false
 		for i, e := range *k.Entries {
 			if e.Name == c.Name && domainsMatch(e.Domain, c.Domain) && pathsMatch(e.Path, c.Path) {
-				fmt.Println("overwriting cookie", e.Name)
+				logger.Debug("overwriting cookie", e.Name)
 				(*k.Entries)[i] = c
 				found = true
 				break
