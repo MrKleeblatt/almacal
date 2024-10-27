@@ -2,8 +2,9 @@ package calendar
 
 import (
 	"almacal/auth"
+	"almacal/logger"
+	"errors"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -14,40 +15,54 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-func IcalFile(sessionno, menuid, date string) string {
+var (
+	ErrIcalFetch = errors.New("ical file fetch error")
+	ErrScraping  = errors.New("web scraping error")
+)
+
+func IcalFile(au *auth.AuthUser, date string) (string, error) {
 	reqBody := url.Values{
 		"month":     {date},
 		"week":      {"0"},
 		"APPNAME":   {"CampusNet"},
 		"PRGNAME":   {"SCHEDULER_EXPORT_START"},
 		"ARGUMENTS": {"sessionno,menuid,date"},
-		"sessionno": {sessionno},
-		"menuid":    {menuid},
+		"sessionno": {au.Sessionno},
+		"menuid":    {au.Menuid},
 		"date":      {date},
 	}
 	payload := strings.NewReader(reqBody.Encode())
 	req, err := http.NewRequest("POST", "https://almaweb.uni-leipzig.de/scripts/mgrqispi.dll", payload)
 	if err != nil {
-		log.Fatalln(err)
+		logger.Fatal("error during post request creation")
+		panic("unreachable")
 	}
-	res, err := auth.RedirectClient.Do(req)
+	res, err := au.RedirectClient.Do(req)
 	if err != nil {
-		log.Fatalln(err)
+		logger.Error("error during POST request when trying to export ical file", err)
+		return "", ErrIcalFetch
 	}
 	// scrape download href from document
 	defer res.Body.Close()
 	doc, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
-		log.Fatalln(err)
+		logger.Error("error during web scraping", err)
+		return "", ErrScraping
 	}
 	var href string
 	doc.Find("table tr td a").Each(func(_ int, selection *goquery.Selection) {
 		href, _ = selection.Attr("href")
 		href = "https://almaweb.uni-leipzig.de" + href
 	})
-	res, err = auth.RedirectClient.Get(href)
+	req, err = http.NewRequest("GET", href, nil)
 	if err != nil {
-		log.Fatalln(err)
+		logger.Fatal("error during get request creation")
+		panic("unreachable")
+	}
+	res, err = au.RedirectClient.Do(req)
+	if err != nil {
+		logger.Error("error during GET request when trying to fetch ical file", err)
+		return "", ErrIcalFetch
 	}
 	defer res.Body.Close()
 	// Who THE FUCK uses something different than UTF-8?!?
@@ -55,7 +70,8 @@ func IcalFile(sessionno, menuid, date string) string {
 	reader := transform.NewReader(res.Body, decoder)
 	by, err := io.ReadAll(reader)
 	if err != nil {
-		log.Fatalln(err)
+		logger.Error("error reading body of ical file")
+		return "", ErrIcalFetch
 	}
 	var result strings.Builder
 	for _, c := range by {
@@ -65,5 +81,5 @@ func IcalFile(sessionno, menuid, date string) string {
 		}
 		result.WriteByte(c)
 	}
-	return result.String()
+	return result.String(), nil
 }
