@@ -65,7 +65,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 	// str := strings.ReplaceAll(result.String(), "END:VCALENDAR\nBEGIN:VCALENDAR", "")
 	str := result.String()
-	regex := regexp.MustCompile("\nEND:VCALENDAR\r\nBEGIN:VCALENDAR\r\nVERSION:2\\.0\r\nPRODID:-\\/\\/Datenlotsen Informationssysteme GmbH\\/\\/CampusNet\\/\\/DE\r\nMETHOD:PUBLISH\r\n\r\nBEGIN:VTIMEZONE\r\nTZID:CampusNetZeit\r\nBEGIN:STANDARD\r\nDTSTART:[\\dT]+\r\nRRULE:FREQ=YEARLY;BYDAY=.+;BYMONTH=\\d+\r\nTZOFFSETFROM:[\\+\\d]+\r\nTZOFFSETTO:[\\+\\d]+\r\nEND:STANDARD\r\nBEGIN:DAYLIGHT\r\nDTSTART:[T\\d]+\r\nRRULE:FREQ=YEARLY;BYDAY=.+;BYMONTH=\\d+\r\nTZOFFSETFROM:[\\+\\d]+\r\nTZOFFSETTO:[\\+\\d]+\r\nEND:DAYLIGHT\r\nEND:VTIMEZONE")
+	regex := regexp.MustCompile("\r\nEND:VCALENDAR\r\nBEGIN:VCALENDAR\r\nVERSION:2\\.0\r\nPRODID:-\\/\\/Datenlotsen Informationssysteme GmbH\\/\\/CampusNet\\/\\/DE\r\nMETHOD:PUBLISH\r\n\r\nBEGIN:VTIMEZONE\r\nTZID:CampusNetZeit\r\nBEGIN:STANDARD\r\nDTSTART:[\\dT]+\r\nRRULE:FREQ=YEARLY;BYDAY=.+;BYMONTH=\\d+\r\nTZOFFSETFROM:[\\+\\d]+\r\nTZOFFSETTO:[\\+\\d]+\r\nEND:STANDARD\r\nBEGIN:DAYLIGHT\r\nDTSTART:[T\\d]+\r\nRRULE:FREQ=YEARLY;BYDAY=.+;BYMONTH=\\d+\r\nTZOFFSETFROM:[\\+\\d]+\r\nTZOFFSETTO:[\\+\\d]+\r\nEND:DAYLIGHT\r\nEND:VTIMEZONE\r\n\r\n")
 	str = regex.ReplaceAllString(str, "")
 	fmt.Fprint(w, str)
 }
